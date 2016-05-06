@@ -139,6 +139,10 @@ class UserAddonSettingsSerializer(JSONAPISerializer):
         )
 
     def account_links(self, obj):
+        if not hasattr(obj, 'external_accounts'):
+            # FIXME: Forcibly excludes addons not yet migrated to new addon structure
+            return {}
+
         return {
             account._id: {
                 'account': absolute_reverse('users:user-external_account-detail', kwargs={'user_id': obj.owner._id, 'provider': obj.config.short_name, 'account_id': account._id}),
