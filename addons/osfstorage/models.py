@@ -255,18 +255,25 @@ class OsfStorageFile(OsfStorageFileNode, File):
 
         return version
 
-    def get_version(self, version=None, required=False):
-        if version is None:
+    def get_version(self, version=None, required=False, version_at_date=None):
+        if version is None and version_at_date is None:
             if self.versions.exists():
                 return self.versions.last()
             return None
 
-        try:
-            return self.versions.all()[int(version) - 1]
-        except (IndexError, ValueError):
-            if required:
-                raise exceptions.VersionNotFoundError(version)
-            return None
+        if version:
+            try:
+                return self.versions.all()[int(version) - 1]
+            except (IndexError, ValueError):
+                if required:
+                    raise exceptions.VersionNotFoundError(version)
+                return None
+
+        if version_at_date:
+            revision = self.versions.filter(date_modified__lte=version_at_date).last()
+            if required and not revision:
+                raise exceptions.VersionNotFoundError(version_at_date)
+            return revision
 
     def add_tag_log(self, action, tag, auth):
         node = self.node

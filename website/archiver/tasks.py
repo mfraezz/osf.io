@@ -167,13 +167,14 @@ def make_copy_request(job_pk, url, data):
     if res.status_code not in (http.OK, http.CREATED, http.ACCEPTED):
         raise HTTPError(res.status_code)
 
-def make_waterbutler_payload(dst_id, rename):
+def make_waterbutler_payload(dst_id, rename, registered_date):
     return {
         'action': 'copy',
         'path': '/',
         'rename': rename.replace('/', '-'),
         'resource': dst_id,
         'provider': settings.ARCHIVE_PROVIDER,
+        'revision_at': registered_date,
     }
 
 @celery_app.task(base=ArchiverTask, ignore_result=False)
@@ -208,7 +209,7 @@ def archive_addon(addon_short_name, job_pk, stat_result):
     folder_name = src_provider.archive_folder_name
     rename = '{}{}'.format(folder_name, rename_suffix)
     url = waterbutler_api_url_for(src._id, addon_short_name, _internal=True, **params)
-    data = make_waterbutler_payload(dst._id, rename)
+    data = make_waterbutler_payload(dst._id, rename, dst.registered_date.isoformat())
     make_copy_request.delay(job_pk=job_pk, url=url, data=data)
 
 @celery_app.task(base=ArchiverTask, ignore_result=False)

@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from dateutil.parser import parse
 import httplib
 import logging
 
@@ -297,6 +298,9 @@ def osfstorage_download(file_node, payload, node_addon, **kwargs):
         current_session = get_session()
         current_session.data['auth_user_id'] = user_id
 
+    if request.args.get('version') and request.args.get('revision_at'):
+        raise make_error(httplib.BAD_REQUEST, message_short='May specify either `version` or `revision_at`, not both.')
+
     if not request.args.get('version'):
         version_id = None
     else:
@@ -305,7 +309,16 @@ def osfstorage_download(file_node, payload, node_addon, **kwargs):
         except ValueError:
             raise make_error(httplib.BAD_REQUEST, message_short='Version must be an integer if not specified')
 
-    version = file_node.get_version(version_id, required=True)
+    if request.args.get('revision_at'):
+        try:
+            revision_datetime = parse(request.args['revision_at'])
+        except ValueError:
+            raise make_error(httplib.BAD_REQUEST, message_short='`revision_at` must be an ISO formatted date string.')
+
+    if revision_datetime:
+        version = file_node.get_version(version_at_date=revision_datetime)
+    else:
+        version = file_node.get_version(version_id, required=True)
 
     if request.args.get('mode') not in ('render', ):
         utils.update_analytics(node_addon.owner, file_node._id, int(version.identifier) - 1)
