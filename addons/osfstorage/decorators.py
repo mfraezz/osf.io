@@ -1,13 +1,18 @@
+from __future__ import unicode_literals
+
+from dateutil.parser import parse
 import httplib
 import functools
 
+from flask import request
 from modularodm.exceptions import NoResultsFound
 from modularodm.storage.base import KeyExistsException
+
+from addons.osfstorage.utils import make_error
+from framework.auth.cas import parse_auth_header
 from framework.auth.decorators import must_be_signed
-
 from framework.exceptions import HTTPError
-
-from osf.models import OSFUser as User, AbstractNode as Node
+from osf.models import OSFUser as User, AbstractNode as Node, ApiOAuth2PersonalToken
 from website.files import models
 from website.files import exceptions
 from website.project.decorators import (
@@ -58,6 +63,50 @@ def autoload_filenode(must_be=None, default_root=False):
 
         return wrapped
     return _autoload_filenode
+
+def autoload_fileversion(must_be=None, default_root=False, version_identifier='version', required=True):
+    """Implies autoload_filenode
+    Attempts to load version based on either a specifiable version kwarg or
+    a `revision_at` kwarg iff using an `osf.admin`-scoped PAT
+    """
+    def _autoload_fileversion(func):
+        @autoload_filenode(must_be=must_be, default_root=default_root)
+        @functools.wraps(func)
+        def wrapped(*args, **kwargs):
+            file_node = kwargs['file_node']
+
+            if request.args.get(version_identifier) and request.args.get('revision_at'):
+                raise make_error(httplib.BAD_REQUEST, message_short='May specify either `version` or `revision_at`, not both.')
+
+            if not request.args.get(version_identifier):
+                version_id = None
+            else:
+                try:
+                    version_id = int(request.args[version_identifier])
+                except (TypeError, ValueError):
+                    if required:
+                        raise make_error(httplib.BAD_REQUEST, message_short='Version must be an integer if not specified')
+                    version = None
+                else:
+                    version = file_node.get_version(version_id, required=required)
+
+            if request.args.get('revision_at'):
+                try:
+                    revision_datetime = parse(request.args['revision_at'])
+                except ValueError:
+                    raise make_error(httplib.BAD_REQUEST, message_short='`revision_at` must be an ISO formatted date string.')
+                else:
+                    authorization = request.headers.get('Authorization', '')
+                    access_token = parse_auth_header(authorization)
+                    if not ApiOAuth2PersonalToken.objects.filter(token_id=access_token, scopes__contains='osf.admin').exists():
+                        make_error(httplib.FORBIDDEN, message_short='Insufficient permissions to perform this action.')
+                    version = file_node.get_version(version_at_date=revision_datetime)
+
+            kwargs['file_version'] = version
+
+            return func(*args, **kwargs)
+        return wrapped
+    return _autoload_fileversion
 
 
 def waterbutler_opt_hook(func):

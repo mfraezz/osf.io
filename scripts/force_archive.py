@@ -24,7 +24,7 @@ from framework.auth import Auth
 from website.archiver.tasks import archive
 from website.archiver import ARCHIVER_INITIATED
 from website.settings import ARCHIVE_TIMEOUT_TIMEDELTA
-from osf.models import Registration, NodeLog
+from osf.models import Registration, NodeLog, ApiOAuth2PersonalToken
 
 from scripts import utils as script_utils
 
@@ -107,6 +107,12 @@ def parse_args():
         dest='check',
         help='Check if registrations are stuck',
     )
+    parser.add_argument(
+        '--pat_pk',
+        action='store',
+        dest='pat',
+        help='Primary key for a personal access token. Requires `osf.admin` scope to complete old ArhiveJobs.'
+    )
     parser.add_argument('registration_ids', type=str, nargs='+', help='GUIDs of registrations to archive')
     return parser.parse_args()
 
@@ -120,6 +126,9 @@ def main():
     else:
         logger.info('Running in dry mode...')
 
+    pat = None
+    if args.pat:
+        pat = ApiOAuth2PersonalToken.objects.get(id=int(args.pat))
     checked_ok, checked_stuck = [], []
     verified, skipped = [], []
     for reg_id in args.registration_ids:

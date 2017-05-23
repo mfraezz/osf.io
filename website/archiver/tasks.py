@@ -30,6 +30,7 @@ from osf.models import (
     ArchiveJob,
     AbstractNode as Node,
     DraftRegistration,
+    ApiOAuth2PersonalToken,
 )
 
 from website.util import waterbutler_api_url_for
@@ -167,19 +168,21 @@ def make_copy_request(job_pk, url, data):
     if res.status_code not in (http.OK, http.CREATED, http.ACCEPTED):
         raise HTTPError(res.status_code)
 
-def make_waterbutler_payload(dst_id, rename, registered_date):
-    return {
+def make_waterbutler_payload(dst_id, rename, registered_date=None):
+    payload = {
         'action': 'copy',
         'path': '/',
         'rename': rename.replace('/', '-'),
         'resource': dst_id,
         'provider': settings.ARCHIVE_PROVIDER,
-        'revision_at': registered_date,
     }
+    if registered_date:
+        payload['revision_at'] = registered_date
+    return payload
 
 @celery_app.task(base=ArchiverTask, ignore_result=False)
 @logged('archive_addon')
-def archive_addon(addon_short_name, job_pk, stat_result):
+def archive_addon(addon_short_name, job_pk, stat_result, pat_pk=None):
     """Archive the contents of an addon by making a copy request to the
     WaterBulter API
 
@@ -193,7 +196,7 @@ def archive_addon(addon_short_name, job_pk, stat_result):
     logger.info('Archiving addon: {0} on node: {1}'.format(addon_short_name, src._id))
 
     cookie = user.get_or_create_cookie()
-    params = {'cookie': cookie}
+    params = {'cookie': cookie}  # TODO: conditionally use PAT here
     rename_suffix = ''
     # The dataverse API will not differentiate between published and draft files
     # unless expcicitly asked. We need to create seperate folders for published and
@@ -209,12 +212,15 @@ def archive_addon(addon_short_name, job_pk, stat_result):
     folder_name = src_provider.archive_folder_name
     rename = '{}{}'.format(folder_name, rename_suffix)
     url = waterbutler_api_url_for(src._id, addon_short_name, _internal=True, **params)
-    data = make_waterbutler_payload(dst._id, rename, dst.registered_date.isoformat())
+    if 'osfstorage' in addon_short_name:
+        data = make_waterbutler_payload(dst._id, rename, registered_date=dst.registered_date.isoformat())
+    else:
+        data = make_waterbutler_payload(dst._id, rename)
     make_copy_request.delay(job_pk=job_pk, url=url, data=data)
 
 @celery_app.task(base=ArchiverTask, ignore_result=False)
 @logged('archive_node')
-def archive_node(stat_results, job_pk):
+def archive_node(stat_results, job_pk, pat_pk=None):
     """First use the results of #stat_node to check disk usage of the
     initiated registration, then either fail the registration or
     create a celery.group group of subtasks to archive addons
@@ -242,7 +248,14 @@ def archive_node(stat_results, job_pk):
             job.status = ARCHIVER_SUCCESS
             job.save()
         for result in stat_result.targets:
-            if not result.num_files:
+            if pat_pk and 'osfstorage' in result.target_name:
+                archive_addon.delay(
+                    addon_short_name=result.target_name,
+                    job_pk=job_pk,
+                    stat_result=result,
+                    pat_pk=pat_pk
+                )
+            elif not result.num_files:
                 job.update_target(result.target_name, ARCHIVER_SUCCESS)
             else:
                 archive_addon.delay(
@@ -253,7 +266,7 @@ def archive_node(stat_results, job_pk):
         project_signals.archive_callback.send(dst)
 
 
-def archive(job_pk):
+def archive(job_pk, pat_pk=None):
     """Starts a celery.chord that runs stat_addon for each
     complete addon attached to the Node, then runs
     #archive_node with the result
@@ -262,6 +275,8 @@ def archive(job_pk):
     :return: None
     """
     create_app_context()
+    if pat_pk and not ApiOAuth2PersonalToken.objects.filter(id=pat_pk).exists():
+        raise ApiOAuth2PersonalToken.DoesNotExist()
     job = ArchiveJob.load(job_pk)
     src, dst, user = job.info()
     logger = get_task_logger(__name__)
@@ -276,7 +291,8 @@ def archive(job_pk):
                 for target in job.target_addons.all()
             ),
             archive_node.s(
-                job_pk=job_pk
+                job_pk=job_pk,
+                pat_pk=pat_pk
             )
         ]
     )
@@ -307,7 +323,7 @@ def archive_success(dst_pk, job_pk):
     # allows users to select files in OSFStorage as their response to some schema
     # questions. These files are references to files on the unregistered Node, and
     # consequently we must migrate those file paths after archiver has run. Using
-    # sha256 hashes is a convenient way to identify files post-archival.
+    # shaApiOAuth2PersonalToken256 hashes is a convenient way to identify files post-archival.
     for schema in dst.registered_schema.all():
         if schema.has_files:
             utils.migrate_file_metadata(dst, schema)

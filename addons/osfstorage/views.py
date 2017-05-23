@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from dateutil.parser import parse
 import httplib
 import logging
 
@@ -32,15 +31,6 @@ from addons.osfstorage import settings as osf_storage_settings
 
 
 logger = logging.getLogger(__name__)
-
-
-def make_error(code, message_short=None, message_long=None):
-    data = {}
-    if message_short:
-        data['message_short'] = message_short
-    if message_long:
-        data['message_long'] = message_long
-    return HTTPError(code, data=data)
 
 
 @must_be_signed
@@ -121,18 +111,13 @@ def osfstorage_get_lineage(file_node, node_addon, **kwargs):
 
 
 @must_be_signed
-@decorators.autoload_filenode(default_root=True)
-def osfstorage_get_metadata(file_node, **kwargs):
-    try:
-        # TODO This should change to version as its internal it can be changed anytime
-        version = int(request.args.get('revision'))
-    except (ValueError, TypeError):  # If its not a number
-        version = None
-    return file_node.serialize(version=version, include_full=True)
+@decorators.autoload_fileversion(default_root=True, required=False)
+def osfstorage_get_metadata(file_node, file_version, **kwargs):
+    return file_node.serialize(version=file_version, include_full=True)
 
 
 @must_be_signed
-@decorators.autoload_filenode(must_be='folder')
+@decorators.autoload_fileversion(must_be='folder')
 def osfstorage_get_children(file_node, **kwargs):
     from django.contrib.contenttypes.models import ContentType
     with connection.cursor() as cursor:
@@ -289,8 +274,8 @@ def osfstorage_delete(file_node, payload, node_addon, **kwargs):
 
 
 @must_be_signed
-@decorators.autoload_filenode(must_be='file')
-def osfstorage_download(file_node, payload, node_addon, **kwargs):
+@decorators.autoload_fileversion(must_be='file')
+def osfstorage_download(file_node, file_version, payload, node_addon, **kwargs):
     # Set user ID in session data for checking if user is contributor
     # to project.
     user_id = payload.get('user')
@@ -298,38 +283,16 @@ def osfstorage_download(file_node, payload, node_addon, **kwargs):
         current_session = get_session()
         current_session.data['auth_user_id'] = user_id
 
-    if request.args.get('version') and request.args.get('revision_at'):
-        raise make_error(httplib.BAD_REQUEST, message_short='May specify either `version` or `revision_at`, not both.')
-
-    if not request.args.get('version'):
-        version_id = None
-    else:
-        try:
-            version_id = int(request.args['version'])
-        except ValueError:
-            raise make_error(httplib.BAD_REQUEST, message_short='Version must be an integer if not specified')
-
-    if request.args.get('revision_at'):
-        try:
-            revision_datetime = parse(request.args['revision_at'])
-        except ValueError:
-            raise make_error(httplib.BAD_REQUEST, message_short='`revision_at` must be an ISO formatted date string.')
-
-    if revision_datetime:
-        version = file_node.get_version(version_at_date=revision_datetime)
-    else:
-        version = file_node.get_version(version_id, required=True)
-
     if request.args.get('mode') not in ('render', ):
-        utils.update_analytics(node_addon.owner, file_node._id, int(version.identifier) - 1)
+        utils.update_analytics(node_addon.owner, file_node._id, int(file_version.identifier) - 1)
 
     return {
         'data': {
             'name': file_node.name,
-            'path': version.location_hash,
+            'path': file_version.location_hash,
         },
         'settings': {
-            osf_storage_settings.WATERBUTLER_RESOURCE: version.location[osf_storage_settings.WATERBUTLER_RESOURCE],
+            osf_storage_settings.WATERBUTLER_RESOURCE: file_version.location[osf_storage_settings.WATERBUTLER_RESOURCE],
         },
     }
 
