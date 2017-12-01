@@ -151,7 +151,7 @@ function gotoFile (item) {
         .segment('files')
         .segment(item.data.provider)
         .segment(item.data.path.substring(1))
-        .search({branch: branch})
+        .search({branch: branch, commitSha: item.data.extra.commitSha})
         .toString();
     if(commandKeys.indexOf(tb.pressedKey) !== -1) {
         window.open(fileurl, '_blank');
