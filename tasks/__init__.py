@@ -370,7 +370,7 @@ def test_else(ctx, numprocesses=None):
 def test_api1(ctx, numprocesses=None):
     """Run the API test suite."""
     print('Testing modules "{}"'.format(API_TESTS1 + ADMIN_TESTS))
-    test_module(ctx, module=API_TESTS1 + ADMIN_TESTS, numprocesses=numprocesses)
+    test_module(ctx, module=API_TESTS1 + ADMIN_TESTS, numprocesses=numprocesses, params='-v')
 
 
 @task
