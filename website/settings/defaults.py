@@ -112,6 +112,9 @@ ELASTIC_KWARGS = {
     # 'client_key': None
 }
 
+# ES6
+ES6_MAX_CHUNK_BYTES = 10 * 1024 ** 2  # 10 megs
+
 # Sessions
 COOKIE_NAME = 'osf'
 # TODO: Override OSF_COOKIE_DOMAIN in local.py in production

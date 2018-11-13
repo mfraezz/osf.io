@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from framework.auth import Auth
 from framework.exceptions import PermissionsError
+from framework.sentry import log_exception
 from osf.utils.fields import NonNaiveDateTimeField
 from website.exceptions import NodeStateError
 from website.util import api_v2_url
@@ -386,6 +387,22 @@ class Registration(AbstractNode):
             super(Registration, self).remove_tags(tags, auth, save)
         else:
             raise NodeStateError('Cannot remove tags of withdrawn registrations.')
+
+    def update_search(self):
+        # Update ES2
+        super(Registration, self).update_search()
+
+        # Avoid circular import
+        from website.search.drivers.elastic import ElasticsearchDriver
+        from website.search.generators.elastic.mappings import RegistrationMappingGenerator
+
+        # Update ES6
+        es_driver = ElasticsearchDriver()
+        actions = RegistrationMappingGenerator(es_driver, schema=self.registered_schema.first())._get_action_generator(initial_query={'id': self.id})
+        try:
+            es_driver._do_index(actions=actions)
+        except Exception:
+            log_exception()
 
     class Meta:
         # custom permissions for use in the OSF Admin App
