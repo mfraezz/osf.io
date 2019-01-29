@@ -3,7 +3,7 @@
 ##     See https://pip-python3.readthedocs.org/en/latest/user_guide.html#constraints-files
 
 lxml==3.4.1
-pytz==2014.9
+pytz==2018.9
 python-dateutil==2.5.0
 html5lib==0.999999999
 bleach==2.1.3
