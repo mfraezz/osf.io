@@ -90,7 +90,7 @@ keen==0.5.1
 maxminddb-geolite2==2018.308
 
 # OSF models
-django-typed-models==0.7.0
+django-typed-models==0.9.0
 django-storages==1.6.6
 google-cloud-storage==0.22.0  # dependency of django-storages, hard-pin to version
 django-dirtyfields==1.3.1
