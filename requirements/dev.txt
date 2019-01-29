@@ -41,4 +41,4 @@ pydevd==0.0.6
 nplusone==0.8.2
 
 # Profiling
-django-silk==2.0.0  # pyup: <3.0 # Remove this when we're using MIDDLEWARE
+django-silk==3.0.1  # pyup: <3.0 # Remove this when we're using MIDDLEWARE
