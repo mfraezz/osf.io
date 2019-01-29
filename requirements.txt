@@ -99,7 +99,7 @@ django-include==0.2.4
 psycopg2==2.7.3
 ujson==1.35
 sqlparse==0.2.4
-psycogreen==1.0
+psycogreen==1.0.1
 django-bulk-update==2.2.0
 ciso8601==1.0.5
 
