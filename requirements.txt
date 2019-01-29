@@ -74,7 +74,7 @@ pyjwt==1.5.3
 django-celery-beat==1.1.1  # BSD 3 Clause
 django-celery-results==1.0.4
 # Issue: sorry, but this version only supports 100 named groups (https://github.com/eliben/pycparser/issues/147)
-pycparser==2.18
+pycparser==2.19
 pyjwe==1.0.0
 jsonschema==2.6.0
 django-guardian==1.4.9
