@@ -22,7 +22,7 @@ kombu==4.2.2.post1
 amqp==2.2.2
 vine==1.2.0
 httplib2==0.10.3
-itsdangerous==0.24
+itsdangerous==1.1.0
 lxml==3.4.1
 mailchimp==2.0.9
 nameparser==1.0.2
