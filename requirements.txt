@@ -83,7 +83,7 @@ django-guardian==1.5.0
 django-webpack-loader==0.6.0
 django-nose==1.4.6
 django-password-reset==2.0
-sendgrid-django==2.0.0
+sendgrid-django==4.2.0
 
 # Analytics requirements
 keen==0.5.1
