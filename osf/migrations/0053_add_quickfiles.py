@@ -4,11 +4,11 @@ from __future__ import unicode_literals
 
 import logging
 
-from django.db import migrations, models
+from django.db import connection, migrations, models
 from django.core.paginator import Paginator
 
-from addons.osfstorage.models import NodeSettings as OSFSNodeSettings, OsfStorageFolder
-from osf.models import OSFUser, QuickFilesNode, Contributor
+from addons.osfstorage.models import NodeSettings as OSFSNodeSettings
+from osf.models import OSFUser, Contributor
 from osf.models.base import ensure_guid
 from osf.models.quickfiles import get_quickfiles_project_title
 
@@ -16,8 +16,21 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-def add_quickfiles(*args, **kwargs):
-    ids_without_quickfiles = list(OSFUser.objects.exclude(nodes_created__type=QuickFilesNode._typedmodels_type).values_list('id', flat=True))
+def add_quickfiles(apps, schema):
+    QuickFilesNode = apps.get_model('osf', 'QuickFilesNode')
+    OsfStorageFolder = apps.get_model('osf', 'OsfStorageFolder')
+    sql = """
+        SELECT OU.id
+        FROM osf_osfuser OU
+        WHERE NOT (
+          OU.id IN (
+            SELECT AN.creator_id
+            FROM "osf_abstractnode" AN
+            WHERE (AN.type = 'osf.quickfilesnode' AND AN.creator_id IS NOT NULL)))
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        ids_without_quickfiles = list(sum(cursor.fetchall(), ()))
 
     users_without_quickfiles = OSFUser.objects.filter(id__in=ids_without_quickfiles).order_by('id')
     total_quickfiles_to_create = users_without_quickfiles.count()
@@ -75,7 +88,8 @@ def add_quickfiles(*args, **kwargs):
 
         OSFSNodeSettings.objects.bulk_create(osfs_to_create)
 
-def remove_quickfiles(*args, **kwargs):
+def remove_quickfiles(apps, schema):
+    QuickFilesNode = apps.get_model('osf', 'QuickFilesNode')
     QuickFilesNode.objects.all().delete()
 
 
