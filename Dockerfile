@@ -164,4 +164,9 @@ RUN for module in \
     ; done \
     && rm ./website/settings/local.py ./api/base/settings/local.py
 
+RUN rm -rf ./website/static ./admin/static ./api/static \
+    && ln -s /code/static_root /code/website/static \
+    && ln -s /code/static_root /code/admin/static \
+    && ln -s /code/static_root /code/api/static
+
 CMD ["su-exec", "nobody", "invoke", "--list"]
