@@ -25,7 +25,7 @@ httplib2==0.10.3
 itsdangerous==0.24
 lxml==3.4.1
 mailchimp==2.0.9
-nameparser==1.0.2
+nameparser==1.0.6
 bcrypt==3.1.6
 python-dateutil==2.6.1
 python-gnupg==0.4.4
