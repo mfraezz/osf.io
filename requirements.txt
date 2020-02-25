@@ -80,7 +80,7 @@ jsonschema==2.6.0
 django-guardian==1.5.0
 
 # Admin requirements
-django-webpack-loader==0.6.0
+django-webpack-loader==0.7.0
 django-nose==1.4.6
 django-password-reset==2.0
 sendgrid-django==2.0.0
