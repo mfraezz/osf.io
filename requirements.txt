@@ -38,7 +38,7 @@ elasticsearch2==2.5.0  # pyup: >=2.4,<3.0 # Major version must be same as ES ver
 elasticsearch==6.3.1
 google-api-python-client==1.7.8
 Babel==2.6.0
-citeproc-py==0.4.0
+citeproc-py==0.5.1
 boto3==1.4.7
 django-waffle==0.15.1
 pymongo==3.7.2
