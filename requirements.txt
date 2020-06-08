@@ -77,7 +77,7 @@ django-celery-results==1.0.4
 pycparser==2.19
 pyjwe==1.0.0
 jsonschema==2.6.0
-django-guardian==1.5.0
+django-guardian==2.3.0
 
 # Admin requirements
 django-webpack-loader==0.6.0
