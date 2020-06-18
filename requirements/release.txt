@@ -5,6 +5,6 @@
 # newrelic APM agent
 newrelic==4.14.0.115
 # uwsgi
-uwsgi==2.0.16
+uwsgi==2.0.19.1
 # Scripts
 progressbar==2.5
