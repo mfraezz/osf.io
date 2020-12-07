@@ -35,7 +35,7 @@ django-debug-toolbar==1.11
 ipdb==0.11
 
 # PyDevD (Remote Debugging)
-pydevd==0.0.6
+pydevd==2.2.0
 
 # n+1 query detection
 nplusone==1.0.0
