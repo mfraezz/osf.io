@@ -86,7 +86,7 @@ django-password-reset==2.0
 sendgrid-django==2.0.0
 
 # Analytics requirements
-keen==0.5.1
+keen==0.7.0
 maxminddb-geolite2==2018.703
 
 # OSF models
