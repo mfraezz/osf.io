@@ -20,7 +20,7 @@ responses==0.8.1
 # Syntax checking
 flake8==3.7.7
 flake8-mutable==1.2.0
-pre-commit==1.14.4
+pre-commit==2.10.0
 
 # Avoid eating cpu with live reloading
 watchdog==0.9.0
