@@ -34,7 +34,7 @@ def is_qa_resource(resource):
     tags = set(resource.tags.all().values_list('name', flat=True))
     has_qa_tags = bool(set(settings.DO_NOT_INDEX_LIST['tags']).intersection(tags))
 
-    has_qa_title = any(substring in resource.title for substring in settings.DO_NOT_INDEX_LIST['titles'])
+    has_qa_title = any(substring in getattr(resource, 'title', '') for substring in settings.DO_NOT_INDEX_LIST['titles'])
 
     return has_qa_tags or has_qa_title
 
