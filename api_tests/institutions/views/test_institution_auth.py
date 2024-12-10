@@ -12,7 +12,7 @@ from api.institutions.authentication import INSTITUTION_SHARED_SSO_MAP
 
 from framework.auth import signals, Auth
 from framework.auth.core import get_user
-from framework.auth.views import send_confirm_email_async
+from framework.auth.views import send_confirm_email
 
 from osf.models import OSFUser, InstitutionAffiliation, InstitutionStorageRegion
 from osf.models.institution import SsoFilterCriteriaAction
@@ -456,7 +456,7 @@ class TestInstitutionAuth:
         assert user.external_identity
 
         # Send confirm email in order to add new email verifications
-        send_confirm_email_async(
+        send_confirm_email(
             user,
             user.username,
             external_id_provider=external_id_provider,

@@ -3256,7 +3256,7 @@ class TestAuthViews(OsfTestCase):
         user = OSFUser.objects.get(username=email)
         assert user.accepted_terms_of_service is None
 
-    @mock.patch('framework.auth.views.send_confirm_email_async')
+    @mock.patch('framework.auth.views.send_confirm_email')
     def test_register_scrubs_username(self, _):
         url = api_url_for('register_user')
         name = "<i>Eunice</i> O' \"Cornwallis\"<script type='text/javascript' src='http://www.cornify.com/js/cornify.js'></script><script type='text/javascript'>cornify_add()</script>"
